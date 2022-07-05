@@ -23,7 +23,8 @@ folder = join(folder, 'celar')
 reports = [file for file in listdir(folder) if "novedad" in file]
 
 for index, report in enumerate(reports):
-    move(join(folder, report), join(folder, f'novedad{index + 1}-{today.hour}h.pdf'))
+    move(join(folder, report), join(
+        folder, f'novedad{index + 1}-{today.hour}h.pdf'))
 
 
 print("File renamed successfully.")

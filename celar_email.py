@@ -78,7 +78,8 @@ for _msg in messages:
 
     # 4. Adjuntar el cuerpo del correo al mensaje.
     # message.attach(MIMEText(msg, 'plain', 'utf8'))
-    text = msg.replace('$(sitio)', _msg.get('site')).replace('$(codigo)', _msg.get('code'))
+    text = msg.replace('$(sitio)', _msg.get('site')).replace(
+        '$(codigo)', _msg.get('code'))
     # text = text.replace('$(codigo)', _msg.get('code'))
     message.attach(MIMEText(text, 'plain'))
 
@@ -103,7 +104,7 @@ for _msg in messages:
             conn.starttls()
             conn.login(user=username, password=password)
             conn.sendmail(from_addr=username, to_addrs=['lmoreno@blacksmithresearch.com', 'jbustamante@blacksmithresearch.com'],
-                        msg=message.as_string())
+                          msg=message.as_string())
     except Exception as e:
         print(f"The connection has thrown an error: {e}")
         # file.write(

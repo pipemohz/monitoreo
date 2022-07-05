@@ -40,7 +40,8 @@ message['From'] = username
 message['To'] = ','.join(email_settings.get('recipients'))
 
 # 3. Configuración del asunto del correo (message['Subject'])
-subject = email_settings.get('subject').replace('$(fecha)', today.strftime("%d-%m-%Y"))
+subject = email_settings.get('subject').replace(
+    '$(fecha)', today.strftime("%d-%m-%Y"))
 message["Subject"] = subject
 
 # 4. Adjuntar el cuerpo del correo al mensaje.

@@ -18,9 +18,9 @@ messages = []
 
 for index, file in enumerate(files):
     convert_from_path(join(folder, file), output_folder=folder,
-                    output_file=f"report{index + 1}", fmt="png", single_file=True)
+                      output_file=f"report{index + 1}", fmt="png", single_file=True)
 
-    messages.append({"report":file})
+    messages.append({"report": file})
     print(f"File {file} converted.")
 
 print("All pdf files converted to png")
