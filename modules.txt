@@ -1,0 +1,7 @@
+pip install pdf2image -t .
+pip install pytesseract -t .
+pip install pytesseract -t .
+pip install opencv-python -t .
+
+# Instalar el poppler indicado para el SO (para windows: https://github.com/oschwartz10612/poppler-windows/releases/) (Crear variable de sistema PATH apuntando al bin de la ruta)
+# Instalar el precompilado de Tesseract en el sistema (para windows: https://github.com/UB-Mannheim/tesseract/wiki) (Crear variable de sistema )
