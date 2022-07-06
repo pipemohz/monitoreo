@@ -50,7 +50,7 @@ def download_all_attachments(conn: imaplib.IMAP4_SSL, email_id: bytes, index: in
     Download all files attached in message.
     """
     from os.path import join
-    
+
     typ, data = conn.fetch(email_id, '(RFC822)')
     email_body = data[0][1]
     # print(email_body)
@@ -74,31 +74,19 @@ def mailbox():
 
     with imaplib.IMAP4_SSL(mail_host) as conn:
         conn.login(mail_username,
-               password=mail_password)
+                   password=mail_password)
         conn.select(readonly=False)
-        print(f'Fecha: {today.strftime("%d-%b-%Y")}')
         # Usar el metodo search para filtrar los mensajes por asunto y fecha. Necesario para adicionar el FLAG de Seen (Visto).
-        data = conn.search(None, '(SUBJECT "RV: Reporte de novedad Celar Monitoreo SV")')[1]
-        # data = conn.search(None, '(SUBJECT "RV: Reporte de novedad Celar Monitoreo SV"', f'ON {today.strftime("%d-%b-%Y")}', 'UNSEEN)')[1]
-        # data = conn.uid('search', '(SUBJECT "RV: Reporte de novedad Celar Monitoreo SV"', f'ON 30-Jun-2022', 'UNSEEN)')[1]
-        emails_id = [_id.decode('utf8') for _id in data[0].split()] 
-        print(emails_id)
+        data = conn.search(None, '(SUBJECT "RV: Reporte de novedad Celar Monitoreo SV"',
+                           f'ON {today.strftime("%d-%b-%Y")}', 'UNSEEN)')[1]
+        emails_id = [_id.decode('utf8') for _id in data[0].split()]
+        # print(emails_id)
 
         print(f"Mensajes encontrados: {len(emails_id)}")
         if emails_id:
             for index, _id in enumerate(emails_id):
                 download_all_attachments(conn, _id, index)
                 conn.store(_id, '+FLAGS', r'(\Seen)')
-            # conn.expunge()
-
-    # #Crear un nuevo mailbox
-    # response = conn.create('Celar')
-    # print(f"response{response}")
-
-    # Mover mensajes a nuevo mailbox
-    # conn.copy(emails_id[0].decode(), 'Celar')
-    # conn.close()
-    # conn.logout()
 
 
 mailbox()

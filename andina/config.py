@@ -3,6 +3,7 @@ from os import mkdir
 from os.path import join, exists
 
 path = GetVar("workfolder_path")
+enterprise_name = "andina"
 
 with open(join(path, "config.json"), mode='r', encoding='utf8') as fp:
     data = json.load(fp)
@@ -30,8 +31,8 @@ if not exists(folder):
 
 with open(join(folder, data['email']['email_settings']), encoding='utf8') as fp:
     email_settings = json.load(fp)
-    email_subject = email_settings['celar']['subject']
-    email_message = email_settings['celar']['message']
+    email_subject = email_settings[enterprise_name]['subject']
+    email_message = email_settings[enterprise_name]['message']
 
 with open(join(folder, email_message), encoding='utf8') as file:
     msg = ""

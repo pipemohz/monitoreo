@@ -170,5 +170,6 @@ templates
 *.db
 
 # Scripts de copia
-robot_andina copy.py
-rename.py
+robot_browser copy.py
+andina/rename.py
+andina/reports.py
