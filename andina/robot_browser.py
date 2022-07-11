@@ -165,18 +165,29 @@ if web_available(driver):
 
         if statistics_page_available:
             # Calcular la fecha del dia anterior
-            delta = dt.timedelta(days=21)
+            delta = dt.timedelta(days=2)
             yesterday = today - delta
+
+            today_date = today.strftime("%Y-%m-%d")
+            yesterday_date = yesterday.strftime("%Y-%m-%d")
 
             # Buscar los input de fecha inicio y fin y el btn de buscar.
             start_date = driver.find_element(By.ID, "fecha")
+            
+            
+
             end_date = driver.find_element(By.ID, "fecha_fin")
             search_btn = driver.find_element(
-                By.CSS_SELECTOR, "button.btn.btn-danger")
+                By.CSS_SELECTOR, "button.btn.btn-primary")
 
-            # Insertar fechas en los input para realizar la busqueda
-            start_date.send_keys(yesterday.strftime("%d-%m-%Y"))
-            end_date.send_keys(today.strftime("%d-%m-%Y"))
+            # Insertar fechas en los input para realizar la busqueda. 
+            # (se modificaron los elementos a "readonly", por lo que se debe hacer click)
+            start_date.click()
+            start_date = driver.find_element(By.CSS_SELECTOR, f"[aria-label='{yesterday_date}']")
+            start_date.click()
+            end_date.click()
+            end_date = driver.find_element(By.CSS_SELECTOR,f"[aria-label='{today_date}']")
+            end_date.click()
             # Realizar la busqueda
             search_btn.click()
 
