@@ -16,7 +16,7 @@ msg = GetVar("email_message")
 server = GetVar("smtp_server")
 username = GetVar("smtp_username")
 password = GetVar("smtp_password")
-code = {code}
+#code = {code}
 # Nombre de la base de datos
 db_name = GetVar("db_name")
 # Diccionario con los mensajes a enviar
@@ -36,7 +36,7 @@ today = dt.datetime.now()
 # Ruta de la base de datos
 database_path = join(path, "database", db_name)
 
-folder = join(path, "reports", today.strftime("%d-%m-%Y"), enterprise_name)
+#folder = join(path, "reports", today.strftime("%d-%m-%Y"), enterprise_name)
 
 # Lectura de la base de datos y almacenamiento como dataframe
 with open(database_path, mode='rb') as fp:
@@ -78,31 +78,31 @@ for _msg in messages:
     # 4. Adjuntar el cuerpo del correo al mensaje.
     # message.attach(MIMEText(msg, 'plain', 'utf8'))
     text = msg.replace('$(sitio)', _msg.get('site')).replace(
-        '$(codigo)', _msg.get('code'))
+        '$(codigo)', _msg.get('code')).replace('$(enlace)', _msg.get('href'))
     # text = text.replace('$(codigo)', _msg.get('code'))
     message.attach(MIMEText(text, 'plain'))
 
     # 5. Definición de un objeto MIMEImage que sirve para cargar una imagen y adjuntarla en el mensaje.
     # ruta de la carpeta donde estan almacenado el archivo zip y el consolidado.
-    folder = join(path, "reports", today.strftime("%d-%m-%Y"))
-    report_path = join(folder, enterprise_name, _msg.get('report'))
+    #folder = join(path, "reports", today.strftime("%d-%m-%Y"))
+    #report_path = join(folder, enterprise_name, _msg.get('report'))
 
     # Inserción del consolidado excel en el mensaje.
-    with open(report_path, mode='rb') as part:
-        pdf_file = MIMEBase('application', 'octet-stream')
-        pdf_file.set_payload(part.read())
+    #with open(report_path, mode='rb') as part:
+    #    pdf_file = MIMEBase('application', 'octet-stream')
+    #    pdf_file.set_payload(part.read())
 
-    encoders.encode_base64(pdf_file)
-    pdf_file.add_header('Content-Disposition', 'attachment',
-                        filename=filename)
-    message.attach(pdf_file)
+    #encoders.encode_base64(pdf_file)
+    #pdf_file.add_header('Content-Disposition', 'attachment',
+    #                    filename=filename)
+    #message.attach(pdf_file)
 
     # Envío de correo mediante una conexión SMTP a la bandeja de correo especificada en la configuración
     try:
         with smtplib.SMTP(host=server, port=port, timeout=60) as conn:
             conn.starttls()
             conn.login(user=username, password=password)
-            conn.sendmail(from_addr=username, to_addrs=['lmoreno@blacksmithresearch.com', 'jbustamante@blacksmithresearch.com'],
+            conn.sendmail(from_addr=username, to_addrs=['jbustamante@blacksmithresearch.com'],
                           msg=message.as_string())
     except Exception as e:
         print(f"The connection has thrown an error: {e}")
