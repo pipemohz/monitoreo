@@ -1,10 +1,11 @@
 import email
+from email.errors import HeaderDefect
 from os.path import join, exists
 from os import mkdir
 import imaplib
 import datetime as dt
 
-global mail_host, mail_username, mail_password, folder, connect, download_all_attachments, today
+global mail_host, mail_username, mail_password, folder, connect, get_email_text, today
 
 path = GetVar("workfolder_path")
 mail_host = GetVar("smtp_server")
@@ -45,48 +46,54 @@ def connect():
     return conn
 
 
-def download_all_attachments(conn: imaplib.IMAP4_SSL, email_id: bytes, index: int):
+def get_email_text(conn: imaplib.IMAP4_SSL, email_id: bytes) -> dict:
     """
     Download all files attached in message.
     """
-    from os.path import join
 
-    typ, data = conn.fetch(email_id, '(RFC822)')
+    # typ, data = conn.fetch(email_id, '(RFC822)')
+    typ, data = conn.fetch(email_id, '(UID BODY[TEXT])')
+
     email_body = data[0][1]
-    # print(email_body)
-    mail = email.message_from_bytes(email_body)
-    if mail.get_content_maintype() != 'multipart':
-        return
-    for part in mail.walk():
-        if part.get_content_maintype() != 'multipart' and part.get('Content-Disposition') is not None:
-            filename = part.get_filename().split('.')[0]
-            print(filename)
-            open(join(folder, f"{filename}{index + 1}.pdf"),
-                 'wb').write(part.get_payload(decode=True))
+
+    msg = email_body[email_body.find(b"Puesto Visitado"):].split(b'\r')[0]
+    code = msg.split(b' ')[-1].decode('utf8')
+
+    msg = email_body[email_body.find(b"https:"):].split(b' ')[0]
+    href = msg.replace(b"\n", b"").replace(
+        b"=\r", b"").replace(b"3D", b"").decode("utf8")
+
+    return {"code": code, "href": href}
 
 
-def mailbox():
+def mailbox() -> list:
     """
     Stablish a connection with mailbox, search all messages with defined subject and download all files attached to message.
     """
-
-    # conn = connect()
 
     with imaplib.IMAP4_SSL(mail_host) as conn:
         conn.login(mail_username,
                    password=mail_password)
         conn.select(readonly=False)
         # Usar el metodo search para filtrar los mensajes por asunto y fecha. Necesario para adicionar el FLAG de Seen (Visto).
-        data = conn.search(None, '(SUBJECT "RV: Reporte de novedad Celar Monitoreo SV"',
+        data = conn.search(None, '(SUBJECT "NOVEDAD REPORTES DE VISITA - REDITOS EMPRESARIALES Version 2.0"',
                            f'ON {today.strftime("%d-%b-%Y")}', 'UNSEEN)')[1]
         emails_id = [_id.decode('utf8') for _id in data[0].split()]
         # print(emails_id)
 
+        messages = []
         print(f"Mensajes encontrados: {len(emails_id)}")
         if emails_id:
-            for index, _id in enumerate(emails_id):
-                download_all_attachments(conn, _id, index)
-                conn.store(_id, '+FLAGS', r'(\Seen)')
+            for _id in emails_id:
+                message = get_email_text(conn, _id)
+                # get_email_text(conn, _id)
+                messages.append(message)
+
+                # conn.store(_id, '+FLAGS', r'(\Seen)')
+
+    return messages
 
 
-mailbox()
+messages = mailbox()
+print("All codes extracted from email messages.")
+SetVar("messages", messages)
