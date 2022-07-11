@@ -61,7 +61,7 @@ def get_email_text(conn: imaplib.IMAP4_SSL, email_id: bytes) -> dict:
 
     msg = email_body[email_body.find(b"https:"):].split(b' ')[0]
     href = msg.replace(b"\n", b"").replace(
-        b"=\r", b"").replace(b"3D", b"").decode("utf8")
+        b"=\r", b"").replace(b"3D", b"").strip(b'"').decode("utf8")
 
     return {"code": code, "href": href}
 
