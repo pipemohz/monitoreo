@@ -98,7 +98,6 @@ with open(join(folder, f"logMiro{today.strftime('%d-%m-%Y %Hh')}.txt"), mode='a'
             fp.write(
                 f"ERROR [{dt.datetime.now()}] Error in sending notification of new in site {_msg['code']} to{_msg['recipient']}.\n")
         else:
-
             print("The message has been sent successfully")
             fp.write(
                 f"INFO [{dt.datetime.now()}] New in site {_msg['code']} notified to{_msg['recipient']}. Link to new: {_msg['href']}.\n")

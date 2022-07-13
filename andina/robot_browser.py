@@ -35,9 +35,10 @@ if not exists(folder):
     mkdir(folder)
 
 # Creación de carpeta para andinas.
-folder = join(folder, 'andina')
-if not exists(folder):
-    mkdir(folder)
+# TODO Revisar la creación de esta carpeta
+# folder = join(folder, 'andina')
+# if not exists(folder):
+    # mkdir(folder)
 
 # (L47-49) Declaración de un objeto ChromeOptions para configurar la ruta de descargas del navegador.
 # Opciones del navegador
@@ -128,97 +129,109 @@ def app_available(driver: webdriver.Chrome) -> bool:
     else:
         return True
 
+with open(join(folder, f"logAndina{today.strftime('%d-%m-%Y %Hh')}.txt"), mode='a', encoding='utf8') as fp:
+    # (L254-257) Inicialización y configuración de objeto de la clase Chrome
+    # Inicialización de un objeto de la clase Chrome para realizar la navegación en la WebSite de PowerBI.
+    driver = webdriver.Chrome(
+        executable_path=chrome_driver_path, chrome_options=chrome_options)
+    driver.delete_all_cookies()
 
-# (L254-257) Inicialización y configuración de objeto de la clase Chrome
-# Inicialización de un objeto de la clase Chrome para realizar la navegación en la WebSite de PowerBI.
-driver = webdriver.Chrome(
-    executable_path=chrome_driver_path, chrome_options=chrome_options)
-driver.delete_all_cookies()
+    # (L261-422) Ejecución del flujo de navegación del robot en Andina Seguridad.
 
-# (L261-422) Ejecución del flujo de navegación del robot en Andina Seguridad.
+    print(f"INFO [{dt.datetime.now()}] Robot execution started.")
+    fp.write(
+        f"INFO [{dt.datetime.now()}] Robot execution started.\n"
+    )
 
-print(f"INFO [{dt.datetime.now()}] Robot execution started.")
+    driver.get(url=credentials.get('URL'))
 
-driver.get(url=credentials.get('URL'))
+    if web_available(driver):
+        # Buscar el input de usuario en el form de inicio de sesión de Andina.
+        # user_input = driver.find_element(By.XPATH, "/html/body/app-root/app-login/div/div/div/div/div/form/div[2]/span[1]/div/input")
+        user_input = driver.find_element(By.NAME, "email")
+        # Insertar username
+        user_input.send_keys(credentials.get('username'))
 
-if web_available(driver):
-    # Buscar el input de usuario en el form de inicio de sesión de Andina.
-    # user_input = driver.find_element(By.XPATH, "/html/body/app-root/app-login/div/div/div/div/div/form/div[2]/span[1]/div/input")
-    user_input = driver.find_element(By.NAME, "email")
-    # Insertar username
-    user_input.send_keys(credentials.get('username'))
+        # Buscar el input de password en el form de inicio de sesión de Andina.
+        # pass_input = driver.find_element(By.XPATH, "/html/body/app-root/app-login/div/div/div/div/div/form/div[2]/span[2]/div/input")
+        pass_input = driver.find_element(By.NAME, "password")
+        # Insertar password
+        pass_input.send_keys(credentials.get('password'))
 
-    # Buscar el input de password en el form de inicio de sesión de Andina.
-    # pass_input = driver.find_element(By.XPATH, "/html/body/app-root/app-login/div/div/div/div/div/form/div[2]/span[2]/div/input")
-    pass_input = driver.find_element(By.NAME, "password")
-    # Insertar password
-    pass_input.send_keys(credentials.get('password'))
+        # Buscar el btn de submit en el form de inicio de sesión de Andina.
+        submit_btn = driver.find_element(
+            By.XPATH, "/html/body/app-root/app-login/div/div/div/div/div/form/div[3]/div/div[1]/button")
+        submit_btn.click()
 
-    # Buscar el btn de submit en el form de inicio de sesión de Andina.
-    submit_btn = driver.find_element(
-        By.XPATH, "/html/body/app-root/app-login/div/div/div/div/div/form/div[3]/div/div[1]/button")
-    submit_btn.click()
+        if user_panel_available(driver):
+            statistics_card = driver.find_element(By.CLASS_NAME, "card-title")
+            statistics_card.click()
+            #TODO Introducir validación para el primer día del mes
+            if statistics_page_available:
+                # Calcular la fecha del dia anterior
+                delta = dt.timedelta(days=11)
+                yesterday = today - delta
 
-    if user_panel_available(driver):
-        statistics_card = driver.find_element(By.CLASS_NAME, "card-title")
-        statistics_card.click()
+                today_date = today.strftime("%Y-%m-%d")
+                yesterday_date = yesterday.strftime("%Y-%m-%d")
 
-        if statistics_page_available:
-            # Calcular la fecha del dia anterior
-            delta = dt.timedelta(days=2)
-            yesterday = today - delta
+                # Buscar los input de fecha inicio y fin y el btn de buscar.
+                start_date = driver.find_element(By.ID, "fecha")
+                end_date = driver.find_element(By.ID, "fecha_fin")
+                search_btn = driver.find_element(
+                    By.CSS_SELECTOR, "button.btn.btn-primary")
 
-            today_date = today.strftime("%Y-%m-%d")
-            yesterday_date = yesterday.strftime("%Y-%m-%d")
+                # Insertar fechas en los input para realizar la busqueda. 
+                # (se modificaron los elementos a "readonly", por lo que se debe hacer click)
+                start_date.click()
+                start_date = driver.find_element(By.CSS_SELECTOR, f"[aria-label='{yesterday_date}']")
+                start_date.click()
+                end_date.click()
+                end_date = driver.find_element(By.CSS_SELECTOR,f"[aria-label='{today_date}']")
+                end_date.click()
+                # Realizar la busqueda
+                search_btn.click()
 
-            # Buscar los input de fecha inicio y fin y el btn de buscar.
-            start_date = driver.find_element(By.ID, "fecha")
-            
-            
+                if projectFactsWrap_available(driver):
+                    # Verificar si existen novedades
+                    news_list = []
+                    if news(driver):
+                        print("Hay novedades")
+                        fp.write(
+                            f"INFO [{dt.datetime.now()}] New findings.\n"
+                        )
+                        if app_available(driver):
+                            # Extraer todas las tarjetas de novedades
+                            # items = driver.find_elements(
+                            #     By.CSS_SELECTOR, "div.card")
+                            t.sleep(2)
+                            items = WebDriverWait(driver, 10).until(
+                                EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.card")))
+                            
+                            for item in items[1:]:
+                                # Extraer elementos html de la card de novedades.
+                                p_list = item.find_elements(By.CSS_SELECTOR, "p")
+                                img = item.find_element(By.CSS_SELECTOR, "img")
 
-            end_date = driver.find_element(By.ID, "fecha_fin")
-            search_btn = driver.find_element(
-                By.CSS_SELECTOR, "button.btn.btn-primary")
+                                src = img.get_attribute('src')
+                                office = p_list[0].text
+                                description = p_list[4].text
+                                news_list.append(
+                                    {"office": office, "description": description, "src": src})
+                    else:
+                        print("No hay novedades")
+                        fp.write(
+                            f"INFO [{dt.datetime.now()}] Not new findings.\n"
+                        )
 
-            # Insertar fechas en los input para realizar la busqueda. 
-            # (se modificaron los elementos a "readonly", por lo que se debe hacer click)
-            start_date.click()
-            start_date = driver.find_element(By.CSS_SELECTOR, f"[aria-label='{yesterday_date}']")
-            start_date.click()
-            end_date.click()
-            end_date = driver.find_element(By.CSS_SELECTOR,f"[aria-label='{today_date}']")
-            end_date.click()
-            # Realizar la busqueda
-            search_btn.click()
+    print("Process finished.\n")
+    fp.write(
+            f"INFO [{dt.datetime.now()}] Process finished.\n"
+    )
+    print("Exiting...")
+    fp.write(
+            f"INFO [{dt.datetime.now()}] Exiting...\n"
+    )
 
-            if projectFactsWrap_available(driver):
-                # Verificar si existen novedades
-                if news(driver):
-                    print("Hay novedades")
-                    if app_available(driver):
-                        # Extraer todas las tarjetas de novedades
-                        # items = driver.find_elements(
-                        #     By.CSS_SELECTOR, "div.card")
-                        t.sleep(2)
-                        items = WebDriverWait(driver, 10).until(
-                            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.card")))
-                        news_list = []
-                        for item in items[1:]:
-                            # Extraer elementos html de la card de novedades.
-                            p_list = item.find_elements(By.CSS_SELECTOR, "p")
-                            img = item.find_element(By.CSS_SELECTOR, "img")
-
-                            src = img.get_attribute('src')
-                            office = p_list[0].text
-                            description = p_list[4].text
-                            news_list.append(
-                                {"office": office, "description": description, "src": src})
-
-                else:
-                    print("No hay novedades")
-
-print("Process finished.")
-print("Exiting...")
-
-SetVar("news", news_list)
-driver.quit()
+    SetVar("news", news_list)
+    driver.quit()

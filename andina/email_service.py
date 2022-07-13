@@ -6,75 +6,87 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 
+from numpy import empty
+
 # Variables de entorno
 path = GetVar('workfolder_path')
 # Configuración del servicio de correo para enviar reportes por SMTP
 port = {smtp_port}
-email_settings = {email_settings}
+email_subject = "{email_subject}"
 msg = GetVar("email_message")
 server = GetVar("smtp_server")
 username = GetVar("smtp_username")
 password = GetVar("smtp_password")
+news_list = {news}
 
-# Crear una variable con las zonas de las novedades
-zones = email_settings['andina']['recipients']
-
-# (L15-20) Definición de las variables para configuración del servicio de correo
-
+# Nombre directorio empresa
+enterprise_name = "Andina"
 # Declaración de una variable para la fecha de hoy
 today = dt.datetime.now()
-
-# 1. Definición de un objecto MIMEMultipart para generar un nuevo mensaje.
-# 2. Configuración de los recipientes para envío de correo (message['To']) (Pendiente lista de correo).
-# 3. Configuración del asunto del correo (message['Subject']).
-# 4. Adjuntar el cuerpo del correo al mensaje.
-# 5. Definición de un objeto MIMEBase que sirve para cargar un archivo PDF y adjuntarlo en el mensaje.
-
-# 1. Definición de un objecto MIMEMultipart para generar un nuevo mensaje
-
-# Configuración del formato del email
-message = MIMEMultipart()
-message['From'] = username
-
-# 2. Configuración de los recipientes para envío de correo (message['To']) (Pendiente lista de correo)
-message['To'] = ','.join(email_settings.get('recipients'))
-
-# 3. Configuración del asunto del correo (message['Subject'])
-subject = email_settings.get('subject').replace(
-    '$(fecha)', today.strftime("%d-%m-%Y"))
-message["Subject"] = subject
-
-# 4. Adjuntar el cuerpo del correo al mensaje.
-# message.attach(MIMEText(msg, 'plain', 'utf8'))
-message.attach(MIMEText(msg, 'plain'))
-
-# 5. Definición de un objeto MIMEImage que sirve para cargar una imagen y adjuntarla en el mensaje.
 # ruta de la carpeta donde estan almacenado el archivo zip y el consolidado.
 folder = join(path, "reports", today.strftime("%d-%m-%Y"))
-report_path = join(folder, 'andina', f'Novedades{today.hour}h.xlsx')
+#report_path = join(folder, 'andina', f'Novedades{today.hour}h.xlsx')
 
-# Inserción del consolidado excel en el mensaje.
-with open(report_path, mode='rb') as part:
-    excel_file = MIMEBase('application', 'octet-stream')
-    excel_file.set_payload(part.read())
+with open(join(folder, f"logAndina{today.strftime('%d-%m-%Y %Hh')}.txt"), mode='a', encoding='utf8') as fp:
+    fp.write(
+        f"INFO [{dt.datetime.now()}] Start Email Service Robot.\n"
+    )
+    # Crear una variable con las zonas de las novedades
+    #zones = email_settings['andina']['recipients']
+    if len(news_list):
+        for _new in news_list:
+            # Se genera un registro en el archivo log de las novedades encontradas
+            fp.write(
+                        f"INFO [{dt.datetime.now()}] New in site {_new['office']}. Description: {_new['description']}. Link to image: {_new['src']}.\n")
+        # (L15-20) Definición de las variables para configuración del servicio de correo
 
-encoders.encode_base64(excel_file)
-excel_file.add_header('Content-Disposition', 'attachment',
-                      filename='Consolidado.xlsx')
-message.attach(excel_file)
+        # 1. Definición de un objecto MIMEMultipart para generar un nuevo mensaje.
+        # 2. Configuración de los recipientes para envío de correo (message['To']) (Pendiente lista de correo).
+        # 3. Configuración del asunto del correo (message['Subject']).
+        # 4. Adjuntar el cuerpo del correo al mensaje.
+        # 5. Definición de un objeto MIMEBase que sirve para cargar un archivo PDF y adjuntarlo en el mensaje.
 
-# Envío de correo mediante una conexión SMTP a la bandeja de correo especificada en la configuración
-try:
-    with smtplib.SMTP(host=server, port=port, timeout=60) as conn:
-        conn.starttls()
-        conn.login(user=username, password=password)
-        conn.sendmail(from_addr=username, to_addrs=email_settings.get('recipients'),
-                      msg=message.as_string())
-except Exception as e:
-    print(f"The connection has thrown an error: {e}")
-    # file.write(
-    #     f"ERROR [{dt.datetime.now()}] The connection with email server timed out.\n")
-else:
-    print("The message has been sent successfully")
-    # file.write(
-    #     f"INFO [{dt.datetime.now()}] Report sucessfully sent to receivers_list.\n")
+        # 1. Definición de un objecto MIMEMultipart para generar un nuevo mensaje
+
+        # Configuración del formato del email
+            message = MIMEMultipart()
+            message['From'] = username
+
+            # 2. Configuración de los recipientes para envío de correo (message['To']) 
+            # TODO (Pendiente lista de correo)
+            #message['To'] = ','.join()
+
+            # 3. Configuración del asunto del correo (message['Subject'])
+            subject = email_subject.replace(
+                '$(fecha)', today.strftime("%d-%m-%Y"))
+            message["Subject"] = subject
+
+            # 4. Adjuntar el cuerpo del correo al mensaje.
+            # message.attach(MIMEText(msg, 'plain', 'utf8'))
+            
+            body = msg.replace('$(oficina)', _new.get('office'))\
+                    .replace('$(novedad)', _new.get('description'))\
+                    .replace('$(link)', _new.get('src'))
+            message.attach(MIMEText(body, 'plain'))
+            # Envío de correo mediante una conexión SMTP a la bandeja de correo especificada en la configuración
+            try:
+                with smtplib.SMTP(host=server, port=port, timeout=60) as conn:
+                    conn.starttls()
+                    conn.login(user=username, password=password)
+                    conn.sendmail(from_addr=username, to_addrs='jbustamante@blacksmithresearch.com',
+                                msg=message.as_string())
+            except Exception as e:
+                print(f"The connection has thrown an error: {e}")
+                fp.write(
+                    f"ERROR [{dt.datetime.now()}] The connection with email server timed out.\n")
+            else:
+                print("The message has been sent successfully")
+                fp.write(
+                        f"INFO [{dt.datetime.now()}] Report sucessfully sent.\n")
+    else:
+        print("Not news to send")
+        fp.write(
+                f"INFO [{dt.datetime.now()}] Not news to send.\n")
+    print("Process finished.\n")
+    fp.write(
+            f"INFO [{dt.datetime.now()}] Process finished.\n")
