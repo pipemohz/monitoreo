@@ -1,3 +1,4 @@
+from logging import exception
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -23,6 +24,8 @@ report_name = "Novedades.xlsx"
 # Tiempo maximo de espera en la descarga del reporte
 max_time = 10
 
+# Se crea una bandera para evaluar el flujo del robot
+flow_complete = 0
 # Definición de variable para la fecha de hoy.
 today = dt.datetime.today()
 
@@ -58,7 +61,10 @@ def web_available(driver: webdriver.Chrome) -> bool:
     try:
         WebDriverWait(driver, 5).until(EC.element_to_be_clickable(
             (By.XPATH, "/html/body/app-root/app-login/div/div/div/div/div/form/div[2]/span[1]/div/input")))
-    except TimeoutException:
+    except TimeoutException as e:
+        fp.write(
+            f"Error [{dt.datetime.now()}] {e}.\n"
+        )
         return False
     else:
         return True
@@ -73,7 +79,10 @@ def user_panel_available(driver: webdriver.Chrome) -> bool:
     try:
         WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.CLASS_NAME, "card-title")))
-    except TimeoutException:
+    except TimeoutException as e:
+        fp.write(
+            f"Error [{dt.datetime.now()}] {e}.\n"
+        )
         return False
     else:
         return True
@@ -83,7 +92,10 @@ def statistics_page_available(driver: webdriver.Chrome) -> bool:
     try:
         WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.ID, "fecha")))
-    except TimeoutException:
+    except TimeoutException as e:
+        fp.write(
+            f"Error [{dt.datetime.now()}] {e}.\n"
+        )
         return False
     else:
         return True
@@ -93,10 +105,36 @@ def projectFactsWrap_available(driver: webdriver.Chrome) -> bool:
     try:
         WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.CLASS_NAME, "projectFactsWrap")))
-    except TimeoutException:
+    except TimeoutException as e:
+        fp.write(
+            f"Error [{dt.datetime.now()}] {e}.\n"
+        )
         return False
     else:
         return True
+
+def chooseDate(driver: webdriver.Chrome, date: dt.datetime) -> bool:
+    date_full = date.strftime("%Y-%m-%d")
+    date_month = date.strftime("%B")
+    date_year = date.strftime("%Y")
+    try:
+        # Buscar el botón para abrir el menú de selección para mes y año
+        date_clicker = driver.find_element(By.CSS_SELECTOR, f"[aria-label='Choose month and year']")
+        date_clicker.click()
+        # Dar click sobre el botón del año
+        date_clicker = driver.find_element(By.CSS_SELECTOR, f"[aria-label='{date_year}']")
+        date_clicker.click()
+        # Dar click sobre el botón del mes
+        date_clicker = driver.find_element(By.CSS_SELECTOR,f"[aria-label='{date_month} {date_year}']")
+        date_clicker.click()
+        # Seleccionar la fecha requerida
+        date_clicker = driver.find_element(By.CSS_SELECTOR,f"[aria-label='{date_full}']")
+        date_clicker.click()
+    except exception as e:
+        fp.write(
+            f"Error [{dt.datetime.now()}] {e}.\n"
+        )
+        return False
 
 
 def news(driver: webdriver.Chrome) -> bool:
@@ -104,7 +142,10 @@ def news(driver: webdriver.Chrome) -> bool:
         # Verificar si estan disponibles los divs con el selector css especificado
         divs = WebDriverWait(driver, 5).until(EC.presence_of_all_elements_located(
             (By.CSS_SELECTOR, "div.item.wow.fadeInUpBig.animated.animated")))
-    except TimeoutException:
+    except TimeoutException as e:
+        fp.write(
+            f"Error [{dt.datetime.now()}] {e}.\n"
+        )
         return False
     else:
         # Seleccionar el div 3 de la lista divs
@@ -124,7 +165,10 @@ def app_available(driver: webdriver.Chrome) -> bool:
     try:
         WebDriverWait(driver, 5).until(EC.presence_of_element_located(
             (By.CSS_SELECTOR, "app-novedades-qr")))
-    except TimeoutException:
+    except TimeoutException as e:
+        fp.write(
+            f"Error [{dt.datetime.now()}] {e}.\n"
+        )   
         return False
     else:
         return True
@@ -169,26 +213,23 @@ with open(join(folder, f"logAndina{today.strftime('%d-%m-%Y %Hh')}.txt"), mode='
             #TODO Introducir validación para el primer día del mes
             if statistics_page_available:
                 # Calcular la fecha del dia anterior
-                delta = dt.timedelta(days=11)
+                delta = dt.timedelta(days=21)
                 yesterday = today - delta
 
-                today_date = today.strftime("%Y-%m-%d")
-                yesterday_date = yesterday.strftime("%Y-%m-%d")
-
                 # Buscar los input de fecha inicio y fin y el btn de buscar.
-                start_date = driver.find_element(By.ID, "fecha")
-                end_date = driver.find_element(By.ID, "fecha_fin")
-                search_btn = driver.find_element(
-                    By.CSS_SELECTOR, "button.btn.btn-primary")
-
                 # Insertar fechas en los input para realizar la busqueda. 
                 # (se modificaron los elementos a "readonly", por lo que se debe hacer click)
+                # Se invoca el método chooseDate para elegir la fecha
+                start_date = driver.find_element(By.ID, "fecha")
                 start_date.click()
-                start_date = driver.find_element(By.CSS_SELECTOR, f"[aria-label='{yesterday_date}']")
-                start_date.click()
+                chooseDate(driver, yesterday)
+
+                end_date = driver.find_element(By.ID, "fecha_fin")
                 end_date.click()
-                end_date = driver.find_element(By.CSS_SELECTOR,f"[aria-label='{today_date}']")
-                end_date.click()
+                chooseDate(driver, today)
+
+                search_btn = driver.find_element(
+                    By.CSS_SELECTOR, "button.btn.btn-primary")
                 # Realizar la busqueda
                 search_btn.click()
 
@@ -223,6 +264,8 @@ with open(join(folder, f"logAndina{today.strftime('%d-%m-%Y %Hh')}.txt"), mode='
                         fp.write(
                             f"INFO [{dt.datetime.now()}] Not new findings.\n"
                         )
+                # Se levanta una bandera para confirmar el correcto flujo
+                flow_complete = True
 
     print("Process finished.\n")
     fp.write(
@@ -234,4 +277,6 @@ with open(join(folder, f"logAndina{today.strftime('%d-%m-%Y %Hh')}.txt"), mode='
     )
 
     SetVar("news", news_list)
+    SetVar("flag_control", flow_complete)
     driver.quit()
+
