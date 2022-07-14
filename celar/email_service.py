@@ -16,7 +16,6 @@ msg = GetVar("email_message")
 server = GetVar("smtp_server")
 username = GetVar("smtp_username")
 password = GetVar("smtp_password")
-code = {code}
 # Nombre de la base de datos
 db_name = GetVar("db_name")
 # Diccionario con los mensajes a enviar

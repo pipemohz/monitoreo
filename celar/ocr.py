@@ -27,7 +27,7 @@ for file, message in zip(files, messages):
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     # acotar la región de interés de la imagen, la cual corresponde al código ventas
-    gray_redux = gray_image[853:893, 518:619]
+    gray_redux = gray_image[853:893, 518:625]
     # plt.imshow(gray_image)
     # plt.show()
 

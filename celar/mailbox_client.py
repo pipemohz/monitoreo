@@ -53,14 +53,12 @@ def download_all_attachments(conn: imaplib.IMAP4_SSL, email_id: bytes, index: in
 
     typ, data = conn.fetch(email_id, '(RFC822)')
     email_body = data[0][1]
-    # print(email_body)
     mail = email.message_from_bytes(email_body)
     if mail.get_content_maintype() != 'multipart':
         return
     for part in mail.walk():
         if part.get_content_maintype() != 'multipart' and part.get('Content-Disposition') is not None:
             filename = part.get_filename().split('.')[0]
-            print(filename)
             open(join(folder, f"{filename}{index + 1}.pdf"),
                  'wb').write(part.get_payload(decode=True))
 
@@ -77,10 +75,9 @@ def mailbox():
                    password=mail_password)
         conn.select(readonly=False)
         # Usar el metodo search para filtrar los mensajes por asunto y fecha. Necesario para adicionar el FLAG de Seen (Visto).
-        data = conn.search(None, '(SUBJECT "RV: Reporte de novedad Celar Monitoreo SV"',
+        data = conn.search(None, '(SUBJECT "Reporte de novedad Celar Monitoreo SV."',
                            f'ON {today.strftime("%d-%b-%Y")}', 'UNSEEN)')[1]
         emails_id = [_id.decode('utf8') for _id in data[0].split()]
-        # print(emails_id)
 
         print(f"Mensajes encontrados: {len(emails_id)}")
         if emails_id:
