@@ -53,12 +53,12 @@ df.dropna(inplace=True, axis="columns")
 
 for message in messages:
     df_filtered = df[(df['CODIGO SV'] == int(message.get('code')))]
-    recipient = df_filtered['Correo Electrónico'].to_list()[0]
-    sales_site = df_filtered['NOMBRE DEL SV'].to_list()[0]
-
-    message["recipient"] = recipient
-    message["site"] = sales_site
-
+    if not df_filtered.empty:
+        recipient = df_filtered['Correo Electrónico'].to_list()[0]
+        sales_site = df_filtered['NOMBRE DEL SV'].to_list()[0]
+        print(message.get('code'))
+        message["recipient"] = recipient
+        message["site"] = sales_site
 
 # 1. Definición de un objecto MIMEMultipart para generar un nuevo mensaje.
 # 2. Configuración de los recipientes para envío de correo (message['To']) (Pendiente lista de correo).
@@ -66,38 +66,42 @@ for message in messages:
 # 4. Adjuntar el cuerpo del correo al mensaje.
 
 with open(join(folder, f"logMiro{today.strftime('%d-%m-%Y %Hh')}.txt"), mode='a', encoding='utf8') as fp:
-
+    errors = [_msg for _msg in messages if _msg.get('recipient') == None]
+    if errors:
+        fp.write(
+                f"Warning [{dt.datetime.now()}] Some sites don't have a code in database ({len(errors)}/{len(messages)}).\n")
     for _msg in messages:
-        # 1. Definición de un objecto MIMEMultipart para generar un nuevo mensaje
+        if _msg.get('recipient') is not None:
+            # 1. Definición de un objecto MIMEMultipart para generar un nuevo mensaje
 
-        # Configuración del formato del email
-        message = MIMEMultipart()
-        message['From'] = username
+            # Configuración del formato del email
+            message = MIMEMultipart()
+            message['From'] = username
 
-        # 2. Configuración de los recipientes para envío de correo (message['To']) (Pendiente lista de correo)
-        message['To'] = _msg.get('recipient')
+            # 2. Configuración de los recipientes para envío de correo (message['To']) (Pendiente lista de correo)
+            message['To'] = _msg.get('recipient')
 
-        # 3. Configuración del asunto del correo (message['Subject'])
-        subject = email_subject
-        message["Subject"] = subject
+            # 3. Configuración del asunto del correo (message['Subject'])
+            subject = email_subject
+            message["Subject"] = subject
 
-        # 4. Adjuntar el cuerpo del correo al mensaje.
-        text = msg.replace('$(sitio)', _msg.get('site')).replace(
-            '$(codigo)', _msg.get('code')).replace('$(enlace)', _msg.get('href'))
-        message.attach(MIMEText(text, 'plain'))
+            # 4. Adjuntar el cuerpo del correo al mensaje.
+            text = msg.replace('$(sitio)', _msg.get('site')).replace(
+                '$(codigo)', _msg.get('code')).replace('$(enlace)', _msg.get('href'))
+            message.attach(MIMEText(text, 'plain'))
 
-        # Envío de correo mediante una conexión SMTP a la bandeja de correo especificada en la configuración
-        try:
-            with smtplib.SMTP(host=server, port=port, timeout=60) as conn:
-                conn.starttls()
-                conn.login(user=username, password=password)
-                conn.sendmail(from_addr=username, to_addrs=['jbustamante@blacksmithresearch.com', 'lmoreno@blacksmithresearch.com'],
-                              msg=message.as_string())
-        except Exception as e:
-            print(f"The connection has thrown an error: {e}")
-            fp.write(
-                f"ERROR [{dt.datetime.now()}] Error in sending notification of new in site {_msg['code']} to{_msg['recipient']}.\n")
-        else:
-            print("The message has been sent successfully")
-            fp.write(
-                f"INFO [{dt.datetime.now()}] New in site {_msg['code']} notified to{_msg['recipient']}. Link to new: {_msg['href']}.\n")
+            # Envío de correo mediante una conexión SMTP a la bandeja de correo especificada en la configuración
+            try:
+                with smtplib.SMTP(host=server, port=port, timeout=60) as conn:
+                    conn.starttls()
+                    conn.login(user=username, password=password)
+                    conn.sendmail(from_addr=username, to_addrs=['jbustamante@blacksmithresearch.com', 'lmoreno@blacksmithresearch.com'],
+                                msg=message.as_string())
+            except Exception as e:
+                print(f"The connection has thrown an error: {e}")
+                fp.write(
+                    f"ERROR [{dt.datetime.now()}] Error in sending notification of new in site {_msg['code']} to{_msg['recipient']}.\n")
+            else:
+                print("The message has been sent successfully")
+                fp.write(
+                    f"INFO [{dt.datetime.now()}] New in site {_msg['code']} notified to {_msg['recipient']}. Link to new: {_msg['href']}.\n")
