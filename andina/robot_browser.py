@@ -222,6 +222,8 @@ with open(join(folder, f"logAndina{today.strftime('%d-%m-%Y %Hh')}.txt"), mode='
                 # Se invoca el método chooseDate para elegir la fecha
                 start_date = driver.find_element(By.ID, "fecha")
                 start_date.click()
+                #driver.execute_script(f'arguments[0].setAttribute("readonly", "false");',start_date)
+                #start_date.send_keys('2022-07-14')
                 chooseDate(driver, yesterday)
 
                 end_date = driver.find_element(By.ID, "fecha_fin")
